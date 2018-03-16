@@ -1,0 +1,7 @@
+version: '3'
+services:
+  job:
+    image: cassandra-jobs-test-cassandra-go
+    volumes:
+      - ${PWD}/vendor:/go/src
+      - ${PWD}:/job

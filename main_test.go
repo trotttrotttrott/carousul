@@ -1,0 +1,71 @@
+package main
+
+import (
+	"fmt"
+	"net"
+	"os/exec"
+	"testing"
+	"time"
+)
+
+var (
+	testkeyspace string
+)
+
+func TestMain(m *testing.M) {
+	for { // wait for Cassandra
+		conn, _ := net.DialTimeout("tcp", "localhost:9042", time.Duration(10)*time.Second)
+		if conn != nil {
+			conn.Close()
+			break
+		}
+	}
+	now := time.Now()
+	testkeyspace = fmt.Sprintf("testkeyspace%02d%02d", now.Minute(), now.Second())
+	createSeedData()
+	metrics = NewMetrics()
+	m.Run()
+	destroySeedData()
+}
+
+func TestRepair(t *testing.T) {
+	repair(testkeyspace)
+}
+
+func TestWriteMetrics(t *testing.T) {
+	metrics.start = time.Now()
+	metrics.finish = metrics.start.Add(time.Second + 1)
+	metrics.success = 1
+	writeMetrics(testkeyspace, "/tmp")
+}
+
+// setup/teardown
+
+func createSeedData() {
+
+	var cmds []string
+
+	cmds = append(cmds, fmt.Sprintf("create keyspace %s with replication = { 'class' : 'SimpleStrategy', 'replication_factor' : 1 };", testkeyspace))
+	cmds = append(cmds, fmt.Sprintf("create table %s.account(id UUID, email UUID, first_name UUID, last_name UUID, PRIMARY KEY(id));", testkeyspace))
+	cmds = append(cmds, fmt.Sprintf("create table %s.organization(id UUID, identifier UUID, PRIMARY KEY(id));", testkeyspace))
+
+	for i := 0; i <= 5; i++ {
+		cmds = append(cmds, fmt.Sprintf("insert into %s.account (id, email, first_name, last_name) values (uuid(), uuid(), uuid(), uuid());", testkeyspace))
+		cmds = append(cmds, fmt.Sprintf("insert into %s.organization (id, identifier) values (uuid(), uuid());", testkeyspace))
+	}
+
+	for _, cmd := range cmds {
+		_, err := exec.Command("cqlsh", "-e", cmd).CombinedOutput()
+		if err != nil {
+			panic(err)
+		}
+	}
+}
+
+func destroySeedData() {
+	cmd := exec.Command("cqlsh", "-e", fmt.Sprintf("drop keyspace %s", testkeyspace))
+	_, err := cmd.CombinedOutput()
+	if err != nil {
+		panic(err)
+	}
+}
