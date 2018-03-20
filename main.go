@@ -65,7 +65,9 @@ func main() {
 
 	err = lock.Unlock()
 	if err != nil {
-		log.Fatal(err)
+		// This is not ideal, but not necessarily a problem because the repair succeeded.
+		// The lock will be released automatically when the session expires which will be in about 30s.
+		log.Print("Unable to unlock Consul lock: ", err)
 	}
 
 	metrics.finish = time.Now()
