@@ -66,7 +66,7 @@ func main() {
 	err = lock.Unlock()
 	if err != nil {
 		// This is not ideal, but not necessarily a problem because the repair succeeded.
-		// The lock will be released automatically when the session expires which will be in about 30s.
+		// The lock will be released automatically when the session expires.
 		log.Print("Unable to unlock Consul lock: ", err)
 	}
 
@@ -87,6 +87,7 @@ func acquireLock(client *consul.Client, lockdc string, lockprefix string, lockna
 	s := client.Session()
 	se := consul.SessionEntry{
 		Name: lockprefix,
+		TTL:  "30m",
 	}
 	q := consul.WriteOptions{
 		Datacenter: lockdc,
