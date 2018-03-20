@@ -56,7 +56,7 @@ func main() {
 	}
 
 	metrics.lockstart = time.Now()
-	lock, lockCh := obtainLock(client, *lockdc, *lockprefix, *lockname)
+	lock, lockCh := acquireLock(client, *lockdc, *lockprefix, *lockname)
 	metrics.lockfinish = time.Now()
 
 	metrics.repairstart = time.Now()
@@ -77,7 +77,7 @@ func main() {
 
 // Only one node should be repaired at a time. All nodes compete
 // for a lock until all of them eventually obtain it and get repaired.
-func obtainLock(client *consul.Client, lockdc string, lockprefix string, lockname string) (*consul.Lock, <-chan struct{}) {
+func acquireLock(client *consul.Client, lockdc string, lockprefix string, lockname string) (*consul.Lock, <-chan struct{}) {
 
 	hostname, err := os.Hostname()
 	if err != nil {
