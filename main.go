@@ -52,7 +52,7 @@ func main() {
 
 	client, err := consul.NewClient(consul.DefaultConfig())
 	if err != nil {
-		panic(err)
+		log.Fatal(err)
 	}
 
 	metrics.lockstart = time.Now()
@@ -91,7 +91,7 @@ func obtainLock(client *consul.Client, lockdc string, lockprefix string, locknam
 	}
 	sid, _, err := s.Create(&se, &q)
 	if err != nil {
-		panic(err)
+		log.Fatal(err)
 	}
 
 	o := consul.LockOptions{
@@ -108,7 +108,7 @@ func obtainLock(client *consul.Client, lockdc string, lockprefix string, locknam
 	stopCh := make(chan struct{})
 	lockCh, err := lock.Lock(stopCh)
 	if err != nil {
-		panic(err)
+		log.Fatal(err)
 	}
 
 	return lock, lockCh
