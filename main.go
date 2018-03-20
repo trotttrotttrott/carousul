@@ -56,11 +56,11 @@ func main() {
 	}
 
 	metrics.lockstart = time.Now()
-	lock := obtainLock(client, *lockdc, *lockprefix, *lockname)
+	lock, lockCh := obtainLock(client, *lockdc, *lockprefix, *lockname)
 	metrics.lockfinish = time.Now()
 
 	metrics.repairstart = time.Now()
-	repair(*keyspace)
+	repair(*keyspace, lockCh)
 	metrics.repairfinish = time.Now()
 
 	err = lock.Unlock()
@@ -75,7 +75,7 @@ func main() {
 
 // Only one node should be repaired at a time. All nodes compete
 // for a lock until all of them eventually obtain it and get repaired.
-func obtainLock(client *consul.Client, lockdc string, lockprefix string, lockname string) *consul.Lock {
+func obtainLock(client *consul.Client, lockdc string, lockprefix string, lockname string) (*consul.Lock, <-chan struct{}) {
 
 	hostname, err := os.Hostname()
 	if err != nil {
@@ -106,15 +106,16 @@ func obtainLock(client *consul.Client, lockdc string, lockprefix string, locknam
 	}
 
 	stopCh := make(chan struct{})
-	_, err = lock.Lock(stopCh)
+	lockCh, err := lock.Lock(stopCh)
 	if err != nil {
 		panic(err)
 	}
 
-	return lock
+	return lock, lockCh
 }
 
-func repair(keyspace string) {
+func repair(keyspace string, lockCh <-chan struct{}) {
+
 	cmd := exec.Command(
 		"nodetool",
 		"repair",
@@ -123,11 +124,22 @@ func repair(keyspace string) {
 		"--sequential",
 		"--partitioner-range",
 	)
-	stdoutStderr, err := cmd.CombinedOutput()
-	if err != nil {
-		log.Fatal(err)
-	}
-	fmt.Printf("%s\n", stdoutStderr)
+
+	go func() {
+		stdoutStderr, err := cmd.CombinedOutput()
+		if err != nil {
+			log.Fatal(err)
+		}
+		fmt.Printf("%s\n", stdoutStderr)
+	}()
+
+	go func() {
+		<-lockCh
+		err := cmd.Process.Kill()
+		if err != nil {
+			log.Fatal("Failed to kill process: ", err)
+		}
+	}()
 }
 
 // Write metrics to file.

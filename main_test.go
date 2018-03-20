@@ -37,7 +37,7 @@ func TestObtainLock(t *testing.T) {
 		panic(err)
 	}
 
-	lock := obtainLock(client, "dc1", "some-prefix", "some-name")
+	lock, _ := obtainLock(client, "dc1", "some-prefix", "some-name")
 
 	err = lock.Unlock()
 	if err != nil {
@@ -46,7 +46,8 @@ func TestObtainLock(t *testing.T) {
 }
 
 func TestRepair(t *testing.T) {
-	repair(testkeyspace)
+	lockCh := make(chan struct{})
+	repair(testkeyspace, lockCh)
 }
 
 func TestWriteMetrics(t *testing.T) {
