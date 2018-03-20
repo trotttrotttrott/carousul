@@ -35,24 +35,30 @@ func NewMetrics() Metrics {
 }
 
 var (
-	metrics Metrics
+	metrics     Metrics
+	keyspace    string
+	textfiledir string
 )
 
 func main() {
 
 	metrics = NewMetrics()
 
-	keyspace := flag.String("keyspace", "", "Keyspace to repair.")
+	k := flag.String("keyspace", "", "Keyspace to repair.")
+	tfdir := flag.String("textfiledir", "", "Prometheus node exporter textfile directory.")
+
 	lockdc := flag.String("lockdc", "", "Datacenter where the Consul lock will be located.")
 	lockprefix := flag.String("lockprefix", "", "Consul KV prefix.")
 	lockname := flag.String("lockname", "", "Lock name.")
-	textfiledir := flag.String("textfiledir", "", "Prometheus node exporter textfile directory.")
 
 	flag.Parse()
 
+	keyspace = *k
+	textfiledir = *tfdir
+
 	client, err := consul.NewClient(consul.DefaultConfig())
 	if err != nil {
-		log.Fatal(err)
+		fail("Could not instantiate Consul client: ", err)
 	}
 
 	metrics.lockstart = time.Now()
@@ -60,7 +66,7 @@ func main() {
 	metrics.lockfinish = time.Now()
 
 	metrics.repairstart = time.Now()
-	repair(*keyspace, lockCh)
+	repair(lockCh)
 	metrics.repairfinish = time.Now()
 
 	err = lock.Unlock()
@@ -72,7 +78,7 @@ func main() {
 
 	metrics.finish = time.Now()
 	metrics.success = 1
-	writeMetrics(*keyspace, *textfiledir)
+	writeMetrics()
 }
 
 // Only one node should be repaired at a time. All nodes compete
@@ -81,7 +87,7 @@ func acquireLock(client *consul.Client, lockdc string, lockprefix string, lockna
 
 	hostname, err := os.Hostname()
 	if err != nil {
-		log.Fatal(err)
+		fail("Could not get hostname: ", err)
 	}
 
 	s := client.Session()
@@ -94,7 +100,7 @@ func acquireLock(client *consul.Client, lockdc string, lockprefix string, lockna
 	}
 	sid, _, err := s.Create(&se, &q)
 	if err != nil {
-		log.Fatal(err)
+		fail("Could not create Consul session: ", err)
 	}
 
 	o := consul.LockOptions{
@@ -105,19 +111,19 @@ func acquireLock(client *consul.Client, lockdc string, lockprefix string, lockna
 
 	lock, err := client.LockOpts(&o)
 	if err != nil {
-		log.Fatal(err)
+		fail("Could not instantiate Lock: ", err)
 	}
 
 	stopCh := make(chan struct{})
 	lockCh, err := lock.Lock(stopCh)
 	if err != nil {
-		log.Fatal(err)
+		fail("Could not acquire lock: ", err)
 	}
 
 	return lock, lockCh
 }
 
-func repair(keyspace string, lockCh <-chan struct{}) {
+func repair(lockCh <-chan struct{}) {
 
 	cmd := exec.Command(
 		"nodetool",
@@ -131,22 +137,31 @@ func repair(keyspace string, lockCh <-chan struct{}) {
 	go func() {
 		stdoutStderr, err := cmd.CombinedOutput()
 		if err != nil {
-			log.Fatal(err)
+			fail("Could not execute repair command: ", err)
 		}
-		fmt.Printf("%s\n", stdoutStderr)
+		log.Printf("%s\n", stdoutStderr)
 	}()
 
 	go func() {
 		<-lockCh
 		err := cmd.Process.Kill()
 		if err != nil {
-			log.Fatal("Failed to kill process: ", err)
+			log.Print("Failed to kill process: ", err)
 		}
+		fail("Session expired before repair completion: ", nil)
 	}()
 }
 
+func fail(str string, err error) {
+	if err != nil {
+		log.Print(str, err)
+	}
+	writeMetrics()
+	log.Fatal("Repair failed.")
+}
+
 // Write metrics to file.
-func writeMetrics(keyspace string, textfiledir string) {
+func writeMetrics() {
 
 	prefix := "cassandra_repair"
 

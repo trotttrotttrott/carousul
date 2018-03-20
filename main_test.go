@@ -47,7 +47,7 @@ func TestObtainLock(t *testing.T) {
 
 func TestRepair(t *testing.T) {
 	lockCh := make(chan struct{})
-	repair(testkeyspace, lockCh)
+	repair(lockCh)
 }
 
 func TestWriteMetrics(t *testing.T) {
@@ -58,7 +58,7 @@ func TestWriteMetrics(t *testing.T) {
 	metrics.repairfinish = metrics.repairstart.Add(time.Second + 10)
 	metrics.finish = metrics.repairfinish.Add(time.Second + 1)
 	metrics.success = 1
-	writeMetrics(testkeyspace, "/tmp")
+	writeMetrics()
 }
 
 // setup/teardown
