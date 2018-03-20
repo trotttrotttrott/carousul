@@ -14,7 +14,7 @@ Program for performing [anti-entropy repair](https://docs.datastax.com/en/cassan
 
 **textfiledir**: Prometheus node exporter textfile directory.
 
-## Considerations
+## Repair Considerations
 
 ### Full vs. Incremental
 
@@ -33,3 +33,21 @@ Repairs only the primary partition ranges of the node being repaired. This preve
 ### Cluster-Wide
 
 Cluster-wide repair increases network traffic between datacenters tremendously, and can cause cluster issues. However, it is required for performing primary range repair (partitioner range).
+
+## Distributed Locking
+
+Distributed locking is implemented in order to ensure that this program is executed on all Cassandra nodes for a given keyspace one at a time. The program is to be run simultaneously on all nodes. The nodes will proceed to compete for a lock. Repair will not happen until the lock is obtained. Each node will eventually obtain the lock.
+
+Consul is used to achieve this. [Consul sessions](https://www.consul.io/docs/internals/sessions.html) are the basis for the approach. Sessions address the following concerns:
+
+### Lock Release on Failure
+
+Session TTL is the chosen health checking mechanism. Locks will be released when its corresponding session expires. Therefore if a failure occurs, the lock will eventually be released and the rest of the nodes in the cluster may acquire the lock and attempt repair.
+
+### Operation Execution Exceeds TTL
+
+As long as the program is alive, the session will be automatically renewed when it is halfway to its configured TTL.
+
+### Unexpected Session Expiration
+
+If a session expires before a repair is completed, the repair will be interrupted. This will require admin attention, but the cluster-wide repair will be able to continue when the next node acquires the lock.
