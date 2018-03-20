@@ -6,6 +6,8 @@ import (
 	"os/exec"
 	"testing"
 	"time"
+
+	consul "github.com/hashicorp/consul/api"
 )
 
 var (
@@ -28,13 +30,32 @@ func TestMain(m *testing.M) {
 	destroySeedData()
 }
 
+func TestObtainLock(t *testing.T) {
+
+	client, err := consul.NewClient(&consul.Config{Address: "consul:8500"})
+	if err != nil {
+		panic(err)
+	}
+
+	lock := obtainLock(client, "dc1", "some-prefix", "some-name")
+
+	err = lock.Unlock()
+	if err != nil {
+		panic(err)
+	}
+}
+
 func TestRepair(t *testing.T) {
 	repair(testkeyspace)
 }
 
 func TestWriteMetrics(t *testing.T) {
 	metrics.start = time.Now()
-	metrics.finish = metrics.start.Add(time.Second + 1)
+	metrics.lockstart = metrics.start.Add(time.Second + 1)
+	metrics.lockfinish = metrics.lockstart.Add(time.Second + 5)
+	metrics.repairstart = metrics.lockfinish.Add(time.Second + 1)
+	metrics.repairfinish = metrics.repairstart.Add(time.Second + 10)
+	metrics.finish = metrics.repairfinish.Add(time.Second + 1)
 	metrics.success = 1
 	writeMetrics(testkeyspace, "/tmp")
 }
