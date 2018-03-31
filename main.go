@@ -49,7 +49,6 @@ func main() {
 
 	lockdc := flag.String("lockdc", "", "Datacenter where the Consul lock will be located.")
 	lockprefix := flag.String("lockprefix", "", "Consul KV prefix.")
-	lockname := flag.String("lockname", "", "Lock name.")
 
 	flag.Parse()
 
@@ -62,7 +61,7 @@ func main() {
 	}
 
 	metrics.lockstart = time.Now()
-	lock, lockCh := acquireLock(client, *lockdc, *lockprefix, *lockname)
+	lock, lockCh := acquireLock(client, *lockdc, *lockprefix)
 	metrics.lockfinish = time.Now()
 
 	metrics.repairstart = time.Now()
@@ -83,7 +82,7 @@ func main() {
 
 // Only one node should be repaired at a time. All nodes compete
 // for a lock until all of them eventually obtain it and get repaired.
-func acquireLock(client *consul.Client, lockdc string, lockprefix string, lockname string) (*consul.Lock, <-chan struct{}) {
+func acquireLock(client *consul.Client, lockdc string, lockprefix string) (*consul.Lock, <-chan struct{}) {
 
 	hostname, err := os.Hostname()
 	if err != nil {
@@ -104,7 +103,7 @@ func acquireLock(client *consul.Client, lockdc string, lockprefix string, lockna
 	}
 
 	o := consul.LockOptions{
-		Key:     lockname,
+		Key:     lockprefix,
 		Session: sid,
 		Value:   []byte(hostname),
 	}

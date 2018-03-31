@@ -37,7 +37,7 @@ func TestObtainLock(t *testing.T) {
 		panic(err)
 	}
 
-	lock, _ := acquireLock(client, "dc1", "some-prefix", "some-name")
+	lock, _ := acquireLock(client, "dc1", "some-prefix")
 
 	err = lock.Unlock()
 	if err != nil {
