@@ -10,10 +10,6 @@ import (
 	consul "github.com/hashicorp/consul/api"
 )
 
-var (
-	testkeyspace string
-)
-
 func TestMain(m *testing.M) {
 	for { // wait for Cassandra
 		conn, _ := net.DialTimeout("tcp", "localhost:9042", time.Duration(10)*time.Second)
@@ -23,7 +19,7 @@ func TestMain(m *testing.M) {
 		}
 	}
 	now := time.Now()
-	testkeyspace = fmt.Sprintf("testkeyspace%02d%02d", now.Minute(), now.Second())
+	keyspace = fmt.Sprintf("testkeyspace%02d%02d", now.Minute(), now.Second())
 	createSeedData()
 	metrics = NewMetrics()
 	m.Run()
@@ -67,13 +63,13 @@ func createSeedData() {
 
 	var cmds []string
 
-	cmds = append(cmds, fmt.Sprintf("create keyspace %s with replication = { 'class' : 'SimpleStrategy', 'replication_factor' : 1 };", testkeyspace))
-	cmds = append(cmds, fmt.Sprintf("create table %s.account(id UUID, email UUID, first_name UUID, last_name UUID, PRIMARY KEY(id));", testkeyspace))
-	cmds = append(cmds, fmt.Sprintf("create table %s.organization(id UUID, identifier UUID, PRIMARY KEY(id));", testkeyspace))
+	cmds = append(cmds, fmt.Sprintf("create keyspace %s with replication = { 'class' : 'SimpleStrategy', 'replication_factor' : 1 };", keyspace))
+	cmds = append(cmds, fmt.Sprintf("create table %s.account(id UUID, email UUID, first_name UUID, last_name UUID, PRIMARY KEY(id));", keyspace))
+	cmds = append(cmds, fmt.Sprintf("create table %s.organization(id UUID, identifier UUID, PRIMARY KEY(id));", keyspace))
 
 	for i := 0; i <= 5; i++ {
-		cmds = append(cmds, fmt.Sprintf("insert into %s.account (id, email, first_name, last_name) values (uuid(), uuid(), uuid(), uuid());", testkeyspace))
-		cmds = append(cmds, fmt.Sprintf("insert into %s.organization (id, identifier) values (uuid(), uuid());", testkeyspace))
+		cmds = append(cmds, fmt.Sprintf("insert into %s.account (id, email, first_name, last_name) values (uuid(), uuid(), uuid(), uuid());", keyspace))
+		cmds = append(cmds, fmt.Sprintf("insert into %s.organization (id, identifier) values (uuid(), uuid());", keyspace))
 	}
 
 	for _, cmd := range cmds {
@@ -85,7 +81,7 @@ func createSeedData() {
 }
 
 func destroySeedData() {
-	cmd := exec.Command("cqlsh", "-e", fmt.Sprintf("drop keyspace %s", testkeyspace))
+	cmd := exec.Command("cqlsh", "-e", fmt.Sprintf("drop keyspace %s", keyspace))
 	_, err := cmd.CombinedOutput()
 	if err != nil {
 		panic(err)
