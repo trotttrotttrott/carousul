@@ -133,13 +133,16 @@ func repair(lockCh <-chan struct{}) {
 		"--partitioner-range",
 	)
 
-	go func() {
+	done := make(chan bool)
+
+	go func(done chan bool) {
 		stdoutStderr, err := cmd.CombinedOutput()
 		if err != nil {
 			fail("Could not execute repair command: ", err)
 		}
 		log.Printf("%s\n", stdoutStderr)
-	}()
+		done <- true
+	}(done)
 
 	go func() {
 		<-lockCh
@@ -149,6 +152,8 @@ func repair(lockCh <-chan struct{}) {
 		}
 		fail("Session expired before repair completion: ", nil)
 	}()
+
+	<-done
 }
 
 func fail(str string, err error) {
