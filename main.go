@@ -45,10 +45,8 @@ func main() {
 	metrics = NewMetrics()
 
 	k := flag.String("keyspace", "", "Keyspace to repair.")
-	tfdir := flag.String("textfiledir", "", "Prometheus node exporter textfile directory.")
-
-	lockdc := flag.String("lockdc", "", "Datacenter where the Consul lock will be located.")
 	lockprefix := flag.String("lockprefix", "", "Consul KV prefix.")
+	tfdir := flag.String("textfiledir", "", "Prometheus node exporter textfile directory.")
 
 	flag.Parse()
 
@@ -94,10 +92,7 @@ func acquireLock(client *consul.Client, lockdc string, lockprefix string) (*cons
 		Name: lockprefix,
 		TTL:  "30m",
 	}
-	q := consul.WriteOptions{
-		Datacenter: lockdc,
-	}
-	sid, _, err := s.Create(&se, &q)
+	sid, _, err := s.Create(&se, &consul.WriteOptions{})
 	if err != nil {
 		fail("Could not create Consul session: ", err)
 	}
@@ -129,7 +124,7 @@ func repair(lockCh <-chan struct{}) {
 		"repair",
 		keyspace,
 		"--full",
-		"--sequential",
+		"--dc-parallel",
 		"--partitioner-range",
 	)
 
