@@ -6,11 +6,7 @@ Program for performing [anti-entropy repair](https://docs.datastax.com/en/cassan
 
 **keyspace**: Keyspace to repair.
 
-**lockdc**: Consul datacenter where the lock should live.
-
 **lockprefix**: Consul KV prefix.
-
-**lockname**: Lock name.
 
 **textfiledir**: Prometheus node exporter textfile directory.
 
