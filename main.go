@@ -90,7 +90,7 @@ func acquireLock(client *consul.Client, lockprefix string) (*consul.Lock, <-chan
 	s := client.Session()
 	se := consul.SessionEntry{
 		Name: lockprefix,
-		TTL:  "30m",
+		TTL:  "5m",
 	}
 	sid, _, err := s.Create(&se, &consul.WriteOptions{})
 	if err != nil {
