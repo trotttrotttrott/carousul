@@ -48,11 +48,6 @@ func TestRepair(t *testing.T) {
 
 func TestWriteMetrics(t *testing.T) {
 	metrics.start = time.Now()
-	metrics.lockstart = metrics.start.Add(time.Second + 1)
-	metrics.lockfinish = metrics.lockstart.Add(time.Second + 5)
-	metrics.repairstart = metrics.lockfinish.Add(time.Second + 1)
-	metrics.repairfinish = metrics.repairstart.Add(time.Second + 10)
-	metrics.finish = metrics.repairfinish.Add(time.Second + 1)
 	metrics.success = 1
 	writeMetrics()
 }

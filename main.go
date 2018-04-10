@@ -73,7 +73,6 @@ func main() {
 		log.Print("Unable to unlock Consul lock: ", err)
 	}
 
-	metrics.finish = time.Now()
 	metrics.success = 1
 	writeMetrics()
 }
@@ -162,14 +161,22 @@ func fail(str string, err error) {
 // Write metrics to file.
 func writeMetrics() {
 
+	metrics.finish = time.Now()
+
 	prefix := "cassandra_repair"
 
 	var s []string
 
-	s = append(s, fmt.Sprintf("%s_%s{keyspace=\"%s\"} %v", prefix, "success", keyspace, metrics.success))
-	s = append(s, fmt.Sprintf("%s_%s{keyspace=\"%s\"} %v", prefix, "duration_lock_milliseconds", keyspace, metrics.lockfinish.Sub(metrics.lockstart).Nanoseconds()/int64(time.Millisecond)))
-	s = append(s, fmt.Sprintf("%s_%s{keyspace=\"%s\"} %v", prefix, "duration_repair_milliseconds", keyspace, metrics.repairfinish.Sub(metrics.repairstart).Nanoseconds()/int64(time.Millisecond)))
-	s = append(s, fmt.Sprintf("%s_%s{keyspace=\"%s\"} %v", prefix, "duration_total_milliseconds", keyspace, metrics.finish.Sub(metrics.start).Nanoseconds()/int64(time.Millisecond)))
+	s = append(s, fmt.Sprintf("%s_%s_%s %v", prefix, "success", keyspace, metrics.success))
+	s = append(s, fmt.Sprintf("%s_%s_%s %v", prefix, "duration_total_milliseconds", keyspace, metrics.finish.Sub(metrics.start).Nanoseconds()/int64(time.Millisecond)))
+
+	if !metrics.lockfinish.IsZero() {
+		s = append(s, fmt.Sprintf("%s_%s_%s %v", prefix, "duration_lock_milliseconds", keyspace, metrics.lockfinish.Sub(metrics.lockstart).Nanoseconds()/int64(time.Millisecond)))
+	}
+	if !metrics.repairfinish.IsZero() {
+		s = append(s, fmt.Sprintf("%s_%s_%s %v", prefix, "duration_repair_milliseconds", keyspace, metrics.repairfinish.Sub(metrics.repairstart).Nanoseconds()/int64(time.Millisecond)))
+	}
+
 	s = append(s, "")
 
 	fp := fmt.Sprintf("%s/%s_%s.prom", textfiledir, prefix, keyspace)
