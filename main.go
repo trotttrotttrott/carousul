@@ -131,10 +131,10 @@ func repair(lockCh <-chan struct{}) {
 
 	go func(done chan bool) {
 		stdoutStderr, err := cmd.CombinedOutput()
+		log.Printf("%s\n", stdoutStderr)
 		if err != nil {
 			fail("Could not execute repair command: ", err)
 		}
-		log.Printf("%s\n", stdoutStderr)
 		done <- true
 	}(done)
 
@@ -144,18 +144,14 @@ func repair(lockCh <-chan struct{}) {
 		if err != nil {
 			log.Print("Failed to kill process: ", err)
 		}
-		fail("Session expired before repair completion: ", nil)
 	}()
 
 	<-done
 }
 
 func fail(str string, err error) {
-	if err != nil {
-		log.Print(str, err)
-	}
 	writeMetrics()
-	log.Fatal("Repair failed.")
+	log.Fatal("Repair failed: ", str, err)
 }
 
 // Write metrics to file.
