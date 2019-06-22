@@ -6,11 +6,28 @@ Program for performing [anti-entropy repair](https://docs.datastax.com/en/cassan
 
 ## Flags
 
-**keyspace**: Cassandra keyspace to repair.
+**keyspace**: Cassandra keyspace to repair. Carousul only takes responsibility for one keyspace at a time.
 
 **lockprefix**: Consul KV prefix indicating where locks are to be created.
 
-**textfiledir**: Prometheus node exporter textfile directory. A file in [text-based exposition format](https://prometheus.io/docs/instrumenting/exposition_formats/#text-based-format) will be written for collection.
+**textfiledir**: Prometheus [node exporter](https://github.com/prometheus/node_exporter) textfile directory. A file in [text-based exposition format](https://prometheus.io/docs/instrumenting/exposition_formats/#text-based-format) will be written here.
+
+## Usage
+
+Carousul is to be executed simultaneously from all nodes of a single datacenter. Each node will perform the repair operation one-by-one.
+
+```
+./carousul -keyspace=keyspace -lockprefix=prefix -textfiledir=/metrics
+```
+
+## Metrics
+
+The following metrics are written for collection:
+
+* `cassandra_repair_success`: 0 or 1 indicating success or failure.
+* `cassandra_repair_duration_lock_milliseconds`: how long it took to obtain the lock.
+* `cassandra_repair_duration_repair_milliseconds`: how long the actual repair took.
+* `cassandra_repair_duration_total_milliseconds`: total duration of program execution.
 
 ## Repair Considerations
 
