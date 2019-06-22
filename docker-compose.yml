@@ -8,4 +8,4 @@ services:
       - consul
     volumes:
       - ${PWD}/vendor:/go/src
-      - ${PWD}:/job
+      - ${PWD}:/carousul
