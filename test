@@ -1,9 +1,0 @@
-#!/usr/bin/env bash
-
-set -e
-
-(cd ../test && \
-  make build-cassandra-jobs-test-cassandra-go)
-docker-compose up -d
-docker-compose exec job \
-  bash -c 'cd /job && go test'

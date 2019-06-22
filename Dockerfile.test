@@ -1,0 +1,12 @@
+FROM cassandra:3.11.1
+
+RUN set -x \
+    && apt-get update && apt-get -y --no-install-recommends install wget \
+    && wget -qO- https://dl.google.com/go/go1.9.3.linux-amd64.tar.gz | \
+      tar xvz -C /usr/local/ \
+    && apt-get purge -y --auto-remove wget
+
+ENV GOPATH /go
+ENV PATH $GOPATH/bin:/usr/local/go/bin:$PATH
+
+RUN mkdir -p $GOPATH/src $GOPATH/bin && chmod -R 777 $GOPATH
