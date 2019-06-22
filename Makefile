@@ -3,7 +3,7 @@ docker-build:
 
 test: docker-build
 	docker-compose up -d
-	docker-compose exec job \
+	docker-compose exec carousul \
 		bash -c 'go test'
 
 go-build: docker-build
