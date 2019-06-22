@@ -1,14 +1,16 @@
-# Repair
+# Carousul
 
-Program for performing [anti-entropy repair](https://docs.datastax.com/en/cassandra/latest/cassandra/operations/opsRepairNodesManualRepair.html) with the [`nodetool repair`](https://docs.datastax.com/en/cassandra/latest/cassandra/tools/toolsRepair.html) command.
+**C**assandra **A**nti-entropy **R**epair **ou** Con**sul**
+
+Program for performing [anti-entropy repair](https://docs.datastax.com/en/cassandra/latest/cassandra/operations/opsRepairNodesManualRepair.html) with the [`nodetool repair`](https://docs.datastax.com/en/cassandra/latest/cassandra/tools/toolsRepair.html) command and [Consul](https://www.consul.io/) for distributed locking.
 
 ## Flags
 
-**keyspace**: Keyspace to repair.
+**keyspace**: Cassandra keyspace to repair.
 
-**lockprefix**: Consul KV prefix.
+**lockprefix**: Consul KV prefix indicating where locks are to be created.
 
-**textfiledir**: Prometheus node exporter textfile directory.
+**textfiledir**: Prometheus node exporter textfile directory. A file in [text-based exposition format](https://prometheus.io/docs/instrumenting/exposition_formats/#text-based-format) will be written for collection.
 
 ## Repair Considerations
 
